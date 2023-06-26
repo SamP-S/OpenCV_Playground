@@ -5,94 +5,9 @@ from PIL import ImageTk, Image
 import os
 import numpy as np
 from enum import Enum
-
-class BitwiseOp(Enum):
-    AND = 0
-    NOT = 1
-    XOR = 2
-    
-class MaskOp(Enum):
-    ADD = 0
-    SUB = 1
-
-class CustomInputDialog(tk.Toplevel):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.title("Custom Input Dialog")
-
-        self.rgb_lower = np.array([0, 0, 0])
-        self.rgb_upper = np.array([128, 128, 128])
-        self.bitwise = BitwiseOp.AND
-        self.maskop = MaskOp.ADD
-
-        self.setup_ui()
-
-    def setup_ui(self):
-        self.main_frame = ttk.Frame(self, padding=10)
-        self.main_frame.pack()
-
-        # Color pickers
-        self.color1_label = ttk.Label(self.main_frame, text="Select Lower Colour:")
-        self.color1_label.grid(row=0, column=0, sticky=tk.W)
-
-        self.color1_button = ttk.Button(self.main_frame, text="Choose RGB", command=self.choose_color1)
-        self.color1_button.grid(row=0, column=1, padx=5, pady=5)
-
-        self.color2_label = ttk.Label(self.main_frame, text="Select Upper Colour:")
-        self.color2_label.grid(row=1, column=0, sticky=tk.W)
-
-        self.color2_button = ttk.Button(self.main_frame, text="Choose RGB", command=self.choose_color2)
-        self.color2_button.grid(row=1, column=1, padx=5, pady=5)
-
-        # Integer dropdowns
-        self.bitwise_label = ttk.Label(self.main_frame, text="Select bitwise operation:")
-        self.bitwise_label.grid(row=2, column=0, sticky=tk.W)
-
-        self.bitwise_dropdown = ttk.Combobox(self.main_frame, values=[str(BitwiseOp.AND), str(BitwiseOp.NOT), str(BitwiseOp.XOR)])
-        self.bitwise_dropdown.current(0)
-        self.bitwise_dropdown.grid(row=2, column=1, padx=5, pady=5)
-
-        self.maskop_label = ttk.Label(self.main_frame, text="Select mask operation:")
-        self.maskop_label.grid(row=3, column=0, sticky=tk.W)
-
-        self.maskop_dropdown = ttk.Combobox(self.main_frame, values=[str(MaskOp.ADD), str(MaskOp.SUB)])
-        self.maskop_dropdown.current(0)
-        self.maskop_dropdown.grid(row=3, column=1, padx=5, pady=5)
-
-        # OK and Cancel buttons
-        self.ok_button = ttk.Button(self.main_frame, text="OK", command=self.on_ok)
-        self.ok_button.grid(row=4, column=0, padx=5, pady=10)
-
-        self.cancel_button = ttk.Button(self.main_frame, text="Cancel", command=self.on_cancel)
-        self.cancel_button.grid(row=4, column=1, padx=5, pady=10)
-
-    def choose_color1(self):
-        color = tk.colorchooser.askcolor()
-        if color[0] is not None:
-            self.rgb_lower = np.array(color[0][:3])
-
-    def choose_color2(self):
-        color = tk.colorchooser.askcolor()
-        if color[0] is not None:
-            self.rgb_upper = np.array(color[0][:3])
-
-    def on_ok(self):
-        bitwise = self.bitwise_dropdown.get()
-        maskop = self.maskop_dropdown.get()
-
-        if self.rgb_lower is None or self.rgb_upper is None or bitwise is None or maskop is None:
-            messagebox.showwarning("Input Error", "Please fill in all fields.")
-        else:
-            self.bitwise = bitwise
-            self.maskop = maskop
-            self.destroy()
-
-    def on_cancel(self):
-        self.destroy()
-
-    def get_values(self):
-        return self
-   
+from colour_mask import *
+from colour_filter import *
+from global_threshold import *
 
 class ImageEditor(tk.Tk):
     def __init__(self):
@@ -133,10 +48,17 @@ class ImageEditor(tk.Tk):
         panel_frame.pack(side=tk.LEFT, padx=10, pady=10)
 
         self.panel_buttons = []
-        functions = [("Grayscale", self.apply_grayscale),
-                     ("Blur", self.apply_blur),
-                     ("Canny Edge", self.apply_canny_edge),
-                     ("Colour Filter", self.apply_colour_filter)]
+        functions = [  
+                        ("Grayscale", self.apply_grayscale),
+                        ("Blur", self.apply_blur),
+                        ("Sharpen", self.apply_sharpen),
+                        ("Global Threshold", self.apply_global_threshold),  
+                        ("Canny Edge", self.apply_canny_edge),
+                        ("Colour Mask", self.apply_colour_mask),
+                        ("Colour Filter", self.apply_colour_filter),
+                        ("Contrast", self.apply_contrast),
+                        ("Rescale", self.apply_rescale)
+                    ]
 
         for label, func in functions:
             button = tk.Button(panel_frame, text=label, width=15, command=func)
@@ -196,43 +118,116 @@ class ImageEditor(tk.Tk):
             blurred_image = cv2.blur(self.current_image(), (5, 5))
             self.push_img_stack(blurred_image)
             self.display_image()
+
+    def apply_sharpen(self):
+        if self.current_image() is not None:
+            copy_img = self.current_image().copy()
+            kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+            copy_img = cv2.filter2D(copy_img, -1, kernel)  
+            self.push_img_stack(copy_img)
+            self.display_image()  
     
     def apply_canny_edge(self):
         return
-    
+
+    def apply_contrast(self):
+        if self.current_image() is not None:
+            copy_image = self.current_image().copy()
+            array_alpha = np.array([1.5])
+            array_beta = np.array([-50.0])
+
+            contrast_img = cv2.add(copy_image, array_beta)                    
+
+            new_img = cv2.multiply(contrast_img, array_alpha)  
+            self.push_img_stack(new_img)
+            self.display_image()
+
     def apply_colour_filter(self):
-        dialog = CustomInputDialog(self)
+        if self.current_image() is not None:
+            dialog = ColourFilter(self)
+            dialog.wait_window()
+
+            colour_base = self.current_image().copy()
+            if dialog.red.get():
+                colour_base[:, :, 2] = 0
+            if dialog.green.get():
+                colour_base[:, :, 1] = 0
+            if dialog.blue.get():
+                colour_base[:, :, 0] = 0
+
+            self.push_img_stack(colour_base)
+            self.display_image()
+    
+    def apply_colour_mask(self):
+        dialog = ColourMask(self)
         dialog.wait_window()
     
-        if dialog.rgb_lower is not None and dialog.rgb_upper is not None and dialog.bitwise is not None and dialog.maskop is not None:
+        if dialog.rgb_lower is not None and dialog.rgb_upper is not None and dialog.maskop is not None:
             print("Lower (RGB):", dialog.rgb_lower)
             print("Higher (RGB):", dialog.rgb_upper)
-            print("Bitwise Operation:", dialog.bitwise)
             print("Mask Operation:", dialog.maskop)
         else:
             print("Dialog canceled.")
             
         if self.current_image() is not None:
-            filter_mask = cv2.inRange(self.current_image(), dialog.rgb_lower, dialog.rgb_upper)
-            if (dialog.bitwise == BitwiseOp.AND):
-                masked_image = cv2.bitwise_and(self.current_image(), self.current_image(), mask=filter_mask)
-            elif (dialog.bitwise == BitwiseOp.NOT):
-                masked_image = cv2.bitwise_not(self.current_image(), self.current_image(), mask=filter_mask)
+            copy_img = self.current_image().copy()
+            filter_mask = cv2.inRange(copy_img, dialog.rgb_lower, dialog.rgb_upper)
+            print("op:", dialog.maskop)
+            result_image = None
+            masked_image = cv2.bitwise_and(copy_img, copy_img, mask=filter_mask)
+            if (dialog.maskop.value == MaskOp.ADD.value):
+                result_image = self.current_image() + masked_image
+            elif (dialog.maskop.value == MaskOp.SUB.value):
+                result_image = self.current_image() - masked_image
+            elif (dialog.maskop.value == MaskOp.AND.value):
+                result_image = masked_image
+            elif (dialog.maskop.value == MaskOp.NOT.value):
+                result_image = cv2.bitwise_not(self.current_image(), self.current_image(), mask=filter_mask)
+            elif (dialog.maskop.value == MaskOp.XOR.value):
+                result_image = cv2.bitwise_xor(self.current_image(), self.current_image(), mask=filter_mask)
+            elif (dialog.maskop.value == MaskOp.OR.value):
+                result_image = cv2.bitwise_xor(self.current_image(), self.current_image(), mask=filter_mask)
             else:
-                masked_image = cv2.bitwise_xor(self.current_image(), self.current_image(), mask=filter_mask)
-
-            if (dialog.maskop == MaskOp.ADD):
-                result = self.current_image() + masked_image
-            else:
-                result = self.current_image() - masked_image
-
-            
+                print("huh")
             # push all filter stages
             self.push_img_stack(filter_mask)
-            self.push_img_stack(masked_image)
-            self.push_img_stack(result)
+            if result_image is not None:
+                self.push_img_stack(result_image)
             self.display_image()
     
+    def apply_global_threshold(self):
+        if self.current_image() is not None:
+            dialog = GlobalThreshold(self)
+            dialog.wait_window()
+
+            copy_img = self.current_image().copy()
+            thresh = dialog.threshold.get()
+            max_val = dialog.max_val.get()
+            if (dialog.thresh_op.value == ThresholdOp.BINARY.value):
+                thresh_op = cv2.THRESH_BINARY
+            elif (dialog.thresh_op.value == ThresholdOp.BINARY_INVERSE.value):
+                thresh_op = cv2.THRESH_BINARY_INV
+            elif (dialog.thresh_op.value == ThresholdOp.TRUNCATE.value):
+                thresh_op = cv2.THRESH_TRUNC   
+            elif (dialog.thresh_op.value == ThresholdOp.TO_ZERO.value):
+                thresh_op = cv2.THRESH_TOZERO
+            else: 
+                thresh_op = cv2.THRESH_TOZERO_INV
+            
+            if dialog.otsu.get():
+                thresh_op += cv2.THRESH_OTSU   
+            used_thresh,thresh_img = cv2.threshold(copy_img, thresh, max_val, thresh_op) 
+            self.push_img_stack(thresh_img)
+            self.display_image()
+
+    def apply_rescale(self):
+        if self.current_image() is not None:
+            copy_img = self.current_image().copy()
+            print(type(copy_img))
+            print(copy_img.shape)
+            for y,row in enumerate(copy_img):
+                for x,value in enumerate(row):
+                    
     
     def push_img_stack(self, img):
         if (img is None):
