@@ -208,7 +208,7 @@ class ImageEditor(tk.Tk):
             elif (dialog.thresh_op.value == ThresholdOp.BINARY_INVERSE.value):
                 thresh_op = cv2.THRESH_BINARY_INV
             elif (dialog.thresh_op.value == ThresholdOp.TRUNCATE.value):
-                thresh_op = cv2.THRESH_TRUNC   
+                thresh_op = cv2.THRESH_TRUNC
             elif (dialog.thresh_op.value == ThresholdOp.TO_ZERO.value):
                 thresh_op = cv2.THRESH_TOZERO
             else: 
@@ -219,15 +219,26 @@ class ImageEditor(tk.Tk):
             used_thresh,thresh_img = cv2.threshold(copy_img, thresh, max_val, thresh_op) 
             self.push_img_stack(thresh_img)
             self.display_image()
+            
+    # def rescale_nearest(self, array, scale_factor):
+    #     # Compute the new shape based on the scale factor
+    #     new_shape = np.array(array.shape) * scale_factor
+
+    #     # Use np.kron() to repeat the elements and create the rescaled array
+    #     rescaled_array = np.kron(array, np.ones(scale_factor)).reshape(new_shape)
+
+    #     return rescaled_array
 
     def apply_rescale(self):
         if self.current_image() is not None:
             copy_img = self.current_image().copy()
-            print(type(copy_img))
-            print(copy_img.shape)
             for y,row in enumerate(copy_img):
                 for x,value in enumerate(row):
-                    
+                    pass
+        # new_img = self.rescale_nearest(copy_img, 0.5)
+        # print(new_img.shape)
+
+                        
     
     def push_img_stack(self, img):
         if (img is None):
