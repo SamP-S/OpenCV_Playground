@@ -15,8 +15,8 @@ class ImageEditor(tk.Tk):
         self.title("Image Editor")
         self.image_stack = []
         self.stack_index = -1
-        self.initial_dir = os.getenv("HOME") + "/nfs/1914-1926/Bowling_Harbour_1914/"
-        self.default_image_path = self.initial_dir + "1914_007.tif"
+        self.initial_dir = os.getenv("HOME") + "/Pictures/"
+        self.default_image_path = self.initial_dir + "hot_image.png"
         self.filepath = self.default_image_path
         self.image_width = 1280
         self.image_height = 720
@@ -79,7 +79,7 @@ class ImageEditor(tk.Tk):
         self.forward_button.pack(side=tk.LEFT, padx=5)
 
     def open_image(self):
-        filepath = filedialog.askopenfilename(filetypes=[("TIF Files", "*.tif")], initialdir=self.initial_dir)
+        filepath = filedialog.askopenfilename(filetypes=[("All Files", "*.*")], initialdir=self.initial_dir)
         if filepath:
             print(filepath)
             self.filepath = filepath
