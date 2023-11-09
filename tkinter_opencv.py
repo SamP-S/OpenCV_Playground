@@ -15,9 +15,8 @@ class ImageEditor(tk.Tk):
         self.title("Image Editor")
         self.image_stack = []
         self.stack_index = -1
-        self.initial_dir = os.getenv("HOME") + "/Pictures/"
-        self.default_image_path = self.initial_dir + "hot_image.png"
-        self.filepath = self.default_image_path
+        self.initial_dir = os.getcwd()
+        self.filepath = None
         self.image_width = 1280
         self.image_height = 720
 
@@ -26,7 +25,6 @@ class ImageEditor(tk.Tk):
         self.create_side_panel()
         self.create_image_display()
         self.create_navigation_buttons()
-        self.load_image()
 
     def create_menu(self):
         menubar = tk.Menu(self)
