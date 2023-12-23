@@ -257,5 +257,6 @@ class ImageEditor(tk.Tk):
             self.stack_index = len(self.image_stack) - 1
         self.display_image()
 
-app = ImageEditor()
-app.mainloop()
+if __name__ == "__main__":
+    app = ImageEditor()
+    app.mainloop()
