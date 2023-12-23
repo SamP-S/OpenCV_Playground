@@ -5,9 +5,10 @@ from PIL import ImageTk, Image
 import os
 import numpy as np
 from enum import Enum
-from colour_mask import *
-from colour_filter import *
-from global_threshold import *
+
+from ocvtk.colour_mask import *
+from ocvtk.colour_filter import *
+from ocvtk.global_threshold import *
 
 class ImageEditor(tk.Tk):
     def __init__(self):
