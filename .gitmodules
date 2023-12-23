@@ -1,0 +1,3 @@
+[submodule "pkg/opencv_extended"]
+	path = pkg/opencv_extended
+	url = https://github.com/SamP-S/OpenCV_Extended
